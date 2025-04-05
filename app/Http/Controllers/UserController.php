@@ -56,4 +56,39 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Utilisateur supprimé avec succès']);
     }
+
+    /**
+     * Récupère les détails de l'utilisateur avec son adresse
+     * 
+     * @param int $id L'ID de l'utilisateur
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserDetails($id)
+    {
+        Log::info('Tentative de récupération des détails de l\'utilisateur', [
+            'id' => $id
+        ]);
+        try {
+            $userDetails = User::with(['roles', 'address'])->find($id);
+            Log::info('Détails de l\'utilisateur récupérés avec succès', [
+                'user' => $userDetails,
+                'message' => 'Détails de l\'utilisateur récupérés avec succès'
+            ]);
+
+            if (!$userDetails) {
+                return response()->json(['error' => 'Utilisateur non trouvé'], 404);
+            }
+
+            return response()->json([
+                'user' => $userDetails,
+                'message' => 'Détails de l\'utilisateur récupérés avec succès'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des détails de l\'utilisateur', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Erreur lors de la récupération des détails de l\'utilisateur'], 500);
+        }
+    }
 }

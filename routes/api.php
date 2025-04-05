@@ -26,7 +26,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/wishlist/{id}', [WishListController::class, 'destroy']);
     Route::post('/comments', [CommentController::class, 'addComment']);
 
-
+    // Routes pour les utilisateurs
+    Route::get('/users/{user}', [UserController::class, 'getUserDetails']);
 
     // Routes pour les administrateurs
     Route::middleware('role:admin')->group(function () {
@@ -43,13 +44,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Autres routes
         Route::get('/user/{id}/roles', [RoleController::class, 'getUserRoles']);
+        Route::get('/products/stock', [ProductController::class, 'getProductsStock']);
+        Route::get('/products/low-stock', [ProductController::class, 'getLowStockProducts']);
 
     });
 
 });
-
-
-
 
 // Routes pour les commentaires
 Route::get('/comments/products/{productId}', [CommentController::class, 'getComments']);
@@ -59,5 +59,7 @@ Route::delete('/comments/{id}', [CommentController::class, 'removeComment']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::post('/logout', [AuthController::class, 'logout']);
+
+
 
 

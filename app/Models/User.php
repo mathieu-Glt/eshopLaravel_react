@@ -47,4 +47,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the user's address.
+     */
+    public function address()
+    {
+        return $this->hasOne(AddressUser::class, 'user_id', 'id');
+    }
 }

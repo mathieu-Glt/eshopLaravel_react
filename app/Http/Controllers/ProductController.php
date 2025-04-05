@@ -266,4 +266,60 @@ class ProductController extends Controller
             return response()->json(['error' => 'Failed to update product image'], 500);
         }
     }
+
+    public function getProductsStock()
+    {
+        try {
+            $products = Product::select('id', 'title', 'stock', 'image')
+                ->get()
+
+                ->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'title' => $product->title,
+                        'stock' => $product->stock,
+                        'image' => $product->image ? Storage::url($product->image) : null,
+                    ];
+                });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la récupération des produits',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getLowStockProducts()
+    {
+        try {
+            $products = Product::select('id', 'title', 'stock', 'image')
+                ->where('stock', '<', 20)
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'title' => $product->title,
+                        'stock' => $product->stock,
+                        'image' => $product->image ? Storage::url($product->image) : null,
+                    ];
+                });
+            Log::info('Produits en stock faible récupérés', ['products' => $products]);
+            return response()->json([
+                'status' => 'success',
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la récupération des produits en stock faible',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

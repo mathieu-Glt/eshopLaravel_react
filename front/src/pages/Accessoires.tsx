@@ -17,20 +17,10 @@ interface Product {
     discounted_price: number | null;
 }
 
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    roles: string[];
-}
-
-const Index = () => {
+const Accessoires = () => {
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<string[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState("all");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [user, setUser] = useState<User | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [priceRange, setPriceRange] = useState<number | null>(null);
     const [minPrice, setMinPrice] = useState<number | null>(null);
@@ -56,20 +46,20 @@ const Index = () => {
                 if (!response.ok) throw new Error("Failed to fetch products");
                 const data = await response.json();
                 console.log("Products received:", data);
-                setProducts(data);
 
+                // Filtrer uniquement les produits de la catégorie "accessoires"
+                const accessoiresProducts = data.filter(
+                    (product: Product) =>
+                        product.category?.toLowerCase() === "accessoires"
+                );
+
+                setProducts(accessoiresProducts);
+
+                // Calculer le prix maximum pour la barre de progression
                 const maxProductPrice = Math.max(
-                    ...data.map((p: Product) => p.price)
+                    ...accessoiresProducts.map((p: Product) => p.price)
                 );
                 setMaxPrice(maxProductPrice);
-
-                const uniqueCategories = [
-                    ...new Set(data.map((p: Product) => p.category)),
-                ].filter(
-                    (category): category is string =>
-                        typeof category === "string"
-                );
-                setCategories(uniqueCategories);
             } catch (err) {
                 console.error("Error fetching products:", err);
                 setError(
@@ -81,13 +71,6 @@ const Index = () => {
         };
 
         fetchProducts();
-    }, []);
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
     }, []);
 
     const handleAddToCart = (product: Product) => {
@@ -102,27 +85,22 @@ const Index = () => {
     };
 
     const filteredProducts = products.filter((product) => {
-        const matchesCategory =
-            selectedCategory === "all" || product.category === selectedCategory;
         const matchesSearch =
             product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             product.description
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase());
 
+        // Calcul du prix final avec réduction
         const finalPrice = product.discount_percentage
             ? product.discounted_price || product.price
             : product.price;
 
+        // Filtrage par prix en utilisant le prix final
         const matchesMaxPrice = !priceRange || finalPrice <= priceRange;
         const matchesMinPrice = !minPrice || finalPrice >= minPrice;
 
-        return (
-            matchesCategory &&
-            matchesSearch &&
-            matchesMaxPrice &&
-            matchesMinPrice
-        );
+        return matchesSearch && matchesMaxPrice && matchesMinPrice;
     });
 
     if (loading)
@@ -156,7 +134,7 @@ const Index = () => {
                                     htmlFor="searchInput"
                                     className="form-label"
                                 >
-                                    Rechercher un produit
+                                    Rechercher un accessoire
                                 </label>
                                 <input
                                     type="text"
@@ -228,40 +206,6 @@ const Index = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Catégories */}
-                            <div>
-                                <label className="form-label">Catégories</label>
-                                <div className="d-flex flex-column gap-2">
-                                    <button
-                                        onClick={() =>
-                                            setSelectedCategory("all")
-                                        }
-                                        className={`btn btn-sm ${
-                                            selectedCategory === "all"
-                                                ? "btn-primary"
-                                                : "btn-outline-primary"
-                                        }`}
-                                    >
-                                        Tous les produits
-                                    </button>
-                                    {categories.map((category) => (
-                                        <button
-                                            key={category}
-                                            onClick={() =>
-                                                setSelectedCategory(category)
-                                            }
-                                            className={`btn btn-sm ${
-                                                selectedCategory === category
-                                                    ? "btn-primary"
-                                                    : "btn-outline-primary"
-                                            }`}
-                                        >
-                                            {category}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -269,200 +213,21 @@ const Index = () => {
                 {/* Contenu principal */}
                 <div className="col-lg-9">
                     {/* Hero Section */}
-                    <div className="p-5 mb-4 bg-warning bg-gradient text-black rounded-3">
+                    <div className="p-5 mb-4 bg-info bg-gradient text-white rounded-3">
                         <div className="container-fluid py-5">
                             <h1 className="display-4 fw-bold">
-                                Bienvenue sur notre boutique
+                                Notre Collection d'Accessoires
                             </h1>
                             <p className="col-md-8 fs-4">
-                                Découvrez notre sélection de produits de qualité
+                                Découvrez notre sélection d'accessoires tendance
+                                et élégants
                             </p>
                         </div>
                     </div>
 
-                    {/* Promotions Carousel */}
+                    {/* Tous les accessoires */}
                     <div className="mb-5">
-                        <h2 className="h3 mb-3">Meilleures Promotions</h2>
-                        <div
-                            id="promotionsCarousel"
-                            className="carousel slide"
-                            data-bs-ride="carousel"
-                            data-bs-interval="5000"
-                            data-bs-wrap="true"
-                        >
-                            {/* Indicateurs */}
-                            <div className="carousel-indicators">
-                                {products
-                                    .filter(
-                                        (product) => product.discount_percentage
-                                    )
-                                    .sort(
-                                        (a, b) =>
-                                            (b.discount_percentage || 0) -
-                                            (a.discount_percentage || 0)
-                                    )
-                                    .slice(0, 8)
-                                    .map((_, index) => (
-                                        <button
-                                            key={index}
-                                            type="button"
-                                            data-bs-target="#promotionsCarousel"
-                                            data-bs-slide-to={index}
-                                            className={
-                                                index === 0 ? "active" : ""
-                                            }
-                                            aria-current={
-                                                index === 0 ? "true" : "false"
-                                            }
-                                            aria-label={`Slide ${index + 1}`}
-                                        ></button>
-                                    ))}
-                            </div>
-
-                            {/* Contenu du carousel */}
-                            <div className="carousel-inner">
-                                {products
-                                    .filter(
-                                        (product) => product.discount_percentage
-                                    )
-                                    .sort(
-                                        (a, b) =>
-                                            (b.discount_percentage || 0) -
-                                            (a.discount_percentage || 0)
-                                    )
-                                    .slice(0, 8)
-                                    .map((product, index) => (
-                                        <div
-                                            key={product.id}
-                                            className={`carousel-item ${
-                                                index === 0 ? "active" : ""
-                                            }`}
-                                        >
-                                            <div className="row g-4">
-                                                {products
-                                                    .filter(
-                                                        (p) =>
-                                                            p.discount_percentage
-                                                    )
-                                                    .sort(
-                                                        (a, b) =>
-                                                            (b.discount_percentage ||
-                                                                0) -
-                                                            (a.discount_percentage ||
-                                                                0)
-                                                    )
-                                                    .slice(
-                                                        index * 4,
-                                                        (index + 1) * 4
-                                                    )
-                                                    .map((product) => (
-                                                        <div
-                                                            key={product.id}
-                                                            className="col-md-3"
-                                                        >
-                                                            <div className="card h-100 shadow-sm">
-                                                                <img
-                                                                    src={getImageUrl(
-                                                                        product.image ||
-                                                                            ""
-                                                                    )}
-                                                                    className="card-img-top"
-                                                                    alt={
-                                                                        product.title
-                                                                    }
-                                                                    style={{
-                                                                        height: "200px",
-                                                                        objectFit:
-                                                                            "cover",
-                                                                    }}
-                                                                />
-                                                                <div className="card-body">
-                                                                    <h5 className="card-title">
-                                                                        {
-                                                                            product.title
-                                                                        }
-                                                                    </h5>
-                                                                    <div className="d-flex justify-content-between align-items-center">
-                                                                        <div>
-                                                                            <span className="text-decoration-line-through text-muted me-2">
-                                                                                {Number(
-                                                                                    product.price
-                                                                                ).toFixed(
-                                                                                    2
-                                                                                )}{" "}
-                                                                                €
-                                                                            </span>
-                                                                            <span className="text-danger fw-bold">
-                                                                                {Number(
-                                                                                    product.discounted_price ||
-                                                                                        product.price
-                                                                                ).toFixed(
-                                                                                    2
-                                                                                )}{" "}
-                                                                                €
-                                                                            </span>
-                                                                            <span className="badge bg-danger ms-2">
-                                                                                -
-                                                                                {
-                                                                                    product.discount_percentage
-                                                                                }
-
-                                                                                %
-                                                                            </span>
-                                                                        </div>
-                                                                        <button
-                                                                            className="btn btn-primary btn-sm"
-                                                                            onClick={() =>
-                                                                                handleAddToCart(
-                                                                                    product
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <i className="bi bi-cart-plus"></i>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                            </div>
-
-                            {/* Boutons de navigation */}
-                            <button
-                                className="carousel-control-prev"
-                                type="button"
-                                data-bs-target="#promotionsCarousel"
-                                data-bs-slide="prev"
-                            >
-                                <span
-                                    className="carousel-control-prev-icon"
-                                    aria-hidden="true"
-                                ></span>
-                                <span className="visually-hidden">
-                                    Précédent
-                                </span>
-                            </button>
-                            <button
-                                className="carousel-control-next"
-                                type="button"
-                                data-bs-target="#promotionsCarousel"
-                                data-bs-slide="next"
-                            >
-                                <span
-                                    className="carousel-control-next-icon"
-                                    aria-hidden="true"
-                                ></span>
-                                <span className="visually-hidden">Suivant</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Tous les produits */}
-                    <div className="mb-5">
-                        <h2 className="h3 mb-3">Tous nos produits</h2>
+                        <h2 className="h3 mb-3">Nos Accessoires</h2>
                         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                             {filteredProducts.map((product) => {
                                 const cartItem = items.find(
@@ -619,4 +384,4 @@ const Index = () => {
     );
 };
 
-export default Index;
+export default Accessoires;
